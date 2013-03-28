@@ -120,6 +120,8 @@ int main()
                     x_start = cur.x;
                     y_start = cur.y;
                     fingers = cur.numFingers;
+                    x_last = cur.x;
+                    y_last = cur.y;
                 }
             } else if (cur.numFingers == fingers) { // Update last to here
                 x_last = cur.x;
