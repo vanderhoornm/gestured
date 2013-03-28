@@ -103,79 +103,57 @@ int main()
     if (!synshm)
         return 1;
 
-    int i = 0;
-    int x[4];
-    int y[4];
-    int z[4];
-    int f[4];
-    int w[4];
-    int accept_next = 1;
-    int last_time = 0;
+    int x_start;
+    int y_start;
+    int fingers = 0;
+    int x_last;
+    int y_last;
 
     while (1) {
         SynapticsSHM cur = *synshm;
-        i++;
-        i &= 3;
-        x[i] = cur.x;
-        y[i] = cur.y;
-        z[i] = cur.z;
-        f[i] = cur.numFingers;
-        w[i] = cur.fingerWidth;
-
-        if (f[i] == 0)
-            accept_next = 1;
-
-        if (f[0] > 2 && f[0] == f[1] && f[1] == f[2] && accept_next) {
-            int a = i;
-            int b = (i-1)&3;
-            int c = (i-2)&3;
-
-            int x1 = x[a] - x[b];
-            int x2 = x[b] - x[c];
-
-            int y1 = y[a] - y[b];
-            int y2 = y[b] - y[c];
-
-#if defined(DEBUG)
-            printf("X %d %d | Y %d %d\n", x1, x2, y1, y1);
+#if defined(VERBOSE)
+        printf("%d fingers down (was %d) at %d,%d\n", cur.numFingers, fingers, cur.x, cur.y);
 #endif
-
-            int x1h = x1 >> 6;
-            if (x1h < 0) x1h++; // truncate towards 0
-            int x2h = x2 >> 6;
-            if (x2h < 0) x2h++; // truncate towards 0
-
-            int x1v = x1 >> 6;
-            if (x1v < 0) x1v++; // truncate towards 0
-            int x2v = x2 >> 6;
-            if (x2v < 0) x2v++; // truncate towards 0
-
-            int y1h = y1 >> 6;
-            if (y1h < 0) y1h++; // truncate towards 0
-            int y2h = y2 >> 6;
-            if (y2h < 0) y2h++; // truncate towards 0
-
-            int y1v = y1 >> 6;
-            if (y1v < 0) y1v++; // truncate towards 0
-            int y2v = y2 >> 6;
-            if (y2v < 0) y2v++; // truncate towards 0
-
-            if (!y1h && !y2h) {
-                if (x1h > 0 && x2h > 0)
-                    do_gesture(f[0], 'r');
-                    accept_next = 0;
-                if (x1h < 0 && x2h < 0)
-                    do_gesture(f[0], 'l');
-                    accept_next = 0;
+        if (cur.numFingers > 2) {
+            if (cur.numFingers > fingers) { // Start of gesture
+                if (fingers >= 0) { // If accepting next gesture
+                    x_start = cur.x;
+                    y_start = cur.y;
+                    fingers = cur.numFingers;
+                }
+            } else if (cur.numFingers == fingers) { // Update last to here
+                x_last = cur.x;
+                y_last = cur.y;
             }
-            else if (!x1h && !x2h) {
-                if (y1h > 0 && y2h > 0)
-                    do_gesture(f[0], 'd');
-                    accept_next = 0;
-                if (y1h < 0 && y2h < 0)
-                    do_gesture(f[0], 'u');
-                    accept_next = 0;
-            }
+        }
+        if (cur.numFingers < fingers) { // Gesture released, analyze
+            int dx = x_last - x_start;
+            int dy = y_last - y_start;
+#if defined(DEBUG)
+            printf("%d finger moving from %d,%d to %d,%d | delta %d,%d\n",
+                    fingers, x_start, y_start, x_last, y_last, dx, dy);
+#endif
+            dx >>= 8;
+            if (dx < 0)
+                dx++; // truncate towards 0 for negative shift divide
+            dy >>= 8;
+            if (dy < 0)
+                dy++; // truncate towards 0 for negative shift divide
+
+            if (!dy)
+                if (dx > 0)
+                    do_gesture(fingers, 'r');
+                else if (dx < 0)
+                    do_gesture(fingers, 'l');
+            if (!dx)
+                if (dy > 0)
+                    do_gesture(fingers, 'd');
+                else if (dy < 0)
+                    do_gesture(fingers, 'u');
+            fingers = -1;
+        }
+        if (cur.numFingers == 0) { // Everything released
+            fingers = 0; // Set accept next gesture
         }
         usleep(50000);
     }
