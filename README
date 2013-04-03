@@ -1,0 +1,19 @@
+Very usecase specific for my Samsung Series 9 NP900X3C running KDE OpenSuse
+
+Detects three and four finger (or more) gestures on the touchpad via synaptics
+shared memory and sends key presses which you then bind to Global Keyboard Shortcuts
+
+Requires:
+
+Option "SHMConfig" "true"
+    in X11 xorg.conf
+
+libX11
+
+libXtst
+
+INSTALL:
+$ make all
+$ make install
+
+For questions or queries contact me at vanderhoornm@gmail.com
