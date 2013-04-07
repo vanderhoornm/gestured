@@ -150,26 +150,25 @@ int main()
         if (cur.numFingers < fingers) { // Gesture released, analyze
             int dx = x_last - x_start;
             int dy = y_last - y_start;
+            int direction;
 #if defined(DEBUG)
             printf("%d finger moving from %d,%d to %d,%d | delta %d,%d\n",
                     fingers, x_start, y_start, x_last, y_last, dx, dy);
 #endif
-            dx >>= 8;
-            if (dx < 0)
-                dx++; // truncate towards 0 for negative shift divide
-            if (dx < 0)
-                dx = -1;
-            else if (dx > 0)
-                dx = 1;
-            dy >>= 8;
-            if (dy < 0)
-                dy++; // truncate towards 0 for negative shift divide
-            if (dy < 0)
-                dy = -1;
-            else if (dy > 0)
-                dy = 1;
+            if (dy < -256)
+                direction = -3;
+            else if (dy > 256)
+                direction = 3;
+            else
+                direction = 0;
 
-            do_gesture(fingers, 3*dy+dx);
+            if (dx < -256)
+                direction--;
+            else if (dx > 256)
+                direction++;
+
+            do_gesture(fingers, direction);
+
             fingers = -1;
         }
         if (cur.numFingers == 0) { // Everything released
