@@ -57,10 +57,10 @@ void send_key_event(Display *display, unsigned int keycode)
     release_key(display, keycode);
 }
 
-void do_gesture(int fingers, char direction)
+void do_gesture(int fingers, int direction)
 {
 #if defined(DEBUG)
-    printf("gesture %d %c\n", fingers, direction);
+    printf("gesture %d %d\n", fingers, direction);
 #else
     Display *display = XOpenDisplay(0);
     if (display == NULL) {
@@ -68,48 +68,48 @@ void do_gesture(int fingers, char direction)
         return;
     }
 
-    switch (fingers) {
-    case 3:
-        switch (direction) {
-        case 'l':
-            send_key_event(display, XF86XK_Launch6);
-            break;
-        case 'r':
-            send_key_event(display, XF86XK_Launch7);
-            break;
-        case 'u':
-            send_key_event(display, XF86XK_Launch8);
-            break;
-        case 'd':
-            send_key_event(display, XF86XK_Launch9);
-            break;
-        }
+    if (fingers == 4)
+        press_key(display, XK_Super_L);
+
+    switch (direction) {
+    case -4: // NW
+        press_key(display, XK_Control_L);
+        send_key_event(display, XF86XK_Launch6);
+        release_key(display, XK_Control_L);
         break;
-    case 4:
-        switch (direction) {
-        case 'l':
-            press_key(display, XK_Super_L);
-            send_key_event(display, XF86XK_Launch6);
-            release_key(display, XK_Super_L);
-            break;
-        case 'r':
-            press_key(display, XK_Super_L);
-            send_key_event(display, XF86XK_Launch7);
-            release_key(display, XK_Super_L);
-            break;
-        case 'u':
-            press_key(display, XK_Super_L);
-            send_key_event(display, XF86XK_Launch8);
-            release_key(display, XK_Super_L);
-            break;
-        case 'd':
-            press_key(display, XK_Super_L);
-            send_key_event(display, XF86XK_Launch9);
-            release_key(display, XK_Super_L);
-            break;
-        }
+    case -3: // N
+        send_key_event(display, XF86XK_Launch8);
+        break;
+    case -2: // NE
+        press_key(display, XK_Control_L);
+        send_key_event(display, XF86XK_Launch8);
+        release_key(display, XK_Control_L);
+        break;
+    case -1: // W
+        send_key_event(display, XF86XK_Launch6);
+        break;
+    case 0: // 0
+        break;
+    case 1: // E
+        send_key_event(display, XF86XK_Launch7);
+        break;
+    case 2: // SW
+        press_key(display, XK_Control_L);
+        send_key_event(display, XF86XK_Launch9);
+        release_key(display, XK_Control_L);
+        break;
+    case 3: // S
+        send_key_event(display, XF86XK_Launch9);
+        break;
+    case 4: // SE
+        press_key(display, XK_Control_L);
+        send_key_event(display, XF86XK_Launch7);
+        release_key(display, XK_Control_L);
         break;
     }
+
+    if (fingers == 4)
+        release_key(display, XK_Super_L);
 
     XCloseDisplay(display);
 #endif
@@ -157,20 +157,19 @@ int main()
             dx >>= 8;
             if (dx < 0)
                 dx++; // truncate towards 0 for negative shift divide
+            if (dx < 0)
+                dx = -1;
+            else if (dx > 0)
+                dx = 1;
             dy >>= 8;
             if (dy < 0)
                 dy++; // truncate towards 0 for negative shift divide
+            if (dy < 0)
+                dy = -1;
+            else if (dy > 0)
+                dy = 1;
 
-            if (!dy)
-                if (dx > 0)
-                    do_gesture(fingers, 'r');
-                else if (dx < 0)
-                    do_gesture(fingers, 'l');
-            if (!dx)
-                if (dy > 0)
-                    do_gesture(fingers, 'd');
-                else if (dy < 0)
-                    do_gesture(fingers, 'u');
+            do_gesture(fingers, 3*dy+dx);
             fingers = -1;
         }
         if (cur.numFingers == 0) { // Everything released
